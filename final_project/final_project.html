@@ -25,16 +25,18 @@
 
 		<script>
 
-		var scene, camera, renderer, controls, stats;
+		var scene, camera, renderer, controls, stats, target, lightHouse;
+		var y_axis = new THREE.Vector3(0,1,0);
+		var radiants = 0;
 
     var width, height;
 
     var waterHeight = 3.5;
 
-    var whiteMaterial = new THREE.MeshBasicMaterial( { color: 0xeeeeee } );
-    var redMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000 } );
-    var yellowMaterial = new THREE.MeshBasicMaterial( { color: 0xffff66 } );
-    var greyMaterial = new THREE.MeshBasicMaterial( { color: 0x555555 } );
+    var whiteMaterial = new THREE.MeshPhongMaterial( { color: 0xeeeeee } );
+    var redMaterial = new THREE.MeshPhongMaterial( { color: 0xff0000 } );
+    var yellowMaterial = new THREE.MeshPhongMaterial( { color: 0xffff66 } );
+    var greyMaterial = new THREE.MeshPhongMaterial( { color: 0x555555 } );
     var lineMaterial = new THREE.LineBasicMaterial({color:0x000000, linewidth: 0.6})
     var scale = 1;
 
@@ -44,15 +46,15 @@
     var water = new THREE.TextureLoader().load('textures/water.jpg');
 		var sand = new THREE.TextureLoader().load('textures/sand.jpg');
     var materials = [
-      new THREE.MeshBasicMaterial( { map: lateral } ),
-      new THREE.MeshBasicMaterial( { map: lateral } ),
-      new THREE.MeshBasicMaterial( { map: grass } ),
-      new THREE.MeshBasicMaterial( { map: ground } ),
-      new THREE.MeshBasicMaterial( { map: lateral } ),
-      new THREE.MeshBasicMaterial( { map: lateral } ),
+      new THREE.MeshPhongMaterial( { map: lateral } ),
+      new THREE.MeshPhongMaterial( { map: lateral } ),
+      new THREE.MeshPhongMaterial( { map: grass } ),
+      new THREE.MeshPhongMaterial( { map: ground } ),
+      new THREE.MeshPhongMaterial( { map: lateral } ),
+      new THREE.MeshPhongMaterial( { map: lateral } ),
     ];
-    var groundMaterial = new THREE.MeshBasicMaterial( { map: ground } );
-    var waterMaterial = new THREE.MeshBasicMaterial( {
+    var groundMaterial = new THREE.MeshPhongMaterial( { map: ground } );
+    var waterMaterial = new THREE.MeshPhongMaterial( {
 			map: water,
 			opacity: 0.7,
 			blendSrc: THREE.SrcAlphaFactor,
@@ -60,17 +62,17 @@
 			blendEquation: THREE.AddEquation,
 			transparent: true
 		} );
-		var sandMaterial = new THREE.MeshBasicMaterial({ map: sand } );
+		var sandMaterial = new THREE.MeshPhongMaterial({ map: sand } );
 
 		var treeTrunk = new THREE.TextureLoader().load('textures/treeTrunk.jpg');
     var treeLeaves = new THREE.TextureLoader().load('textures/treeLeaves.png');
     var bush = new THREE.TextureLoader().load('textures/bush.png');
 		var algae = new THREE.TextureLoader().load('textures/algae.jpg');
 
-    var treeTrunkMaterial = new THREE.MeshBasicMaterial( { map: treeTrunk } );
-    var treeLeavesMaterial = new THREE.MeshBasicMaterial( { map: treeLeaves } );
-    var bushMaterial = new THREE.MeshBasicMaterial( { map: bush } );
-		var algaeMaterial = new THREE.MeshBasicMaterial( { map: algae } );
+    var treeTrunkMaterial = new THREE.MeshPhongMaterial( { map: treeTrunk } );
+    var treeLeavesMaterial = new THREE.MeshPhongMaterial( { map: treeLeaves } );
+    var bushMaterial = new THREE.MeshPhongMaterial( { map: bush } );
+		var algaeMaterial = new THREE.MeshPhongMaterial( { map: algae } );
 
 
 		function getHeightData(img,scale) {
@@ -108,14 +110,52 @@
 			scene = new THREE.Scene();
 			camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 
-			renderer = new THREE.WebGLRenderer( {antialias: true, logarithmicDepthBuffer:true} );
+			renderer = new THREE.WebGLRenderer( {antialias: true} );
 			renderer.setSize( window.innerWidth, window.innerHeight );
 			renderer.setClearColor( 0x252850 );
+			renderer.setPixelRatio( window.devicePixelRatio );
+			renderer.shadowMap.enabled = true;
+			renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+			renderer.outputEncoding = THREE.sRGBEncoding;
+			renderer.gammaInput = true;
+			renderer.gammaOutput = true;
 			document.body.appendChild( renderer.domElement );
+
+
+			hemiLight = new THREE.HemisphereLight( 0x252850, 0x252850, 0.6 );
+			hemiLight.color.setHSL( 0.6, 1, 0.6 );
+			hemiLight.groundColor.setHSL( 0.095, 1, 0.75 );
+			hemiLight.position.set( 0, 500, 0 );
+			scene.add( hemiLight );
 
 			camera.position.set(30,14,60);
 			camera.lookAt( new THREE.Vector3(0,0,0));
 
+
+
+			spotLight = new THREE.SpotLight( 0xffffff, 1 );
+			spotLight.position.set( 0, 11.5, 0 );
+			spotLight.angle = Math.PI / 7;
+			spotLight.penumbra = 0.2;
+
+			spotLight.castShadow = true;
+			spotLight.shadow.mapSize.width = 1024;
+			spotLight.shadow.mapSize.height = 1024;
+			spotLight.shadow.camera.near = 5;
+			spotLight.shadow.camera.far = 200;
+			scene.add( spotLight );
+
+			lightContainer = new THREE.Object3D();
+      lightContainer.matrixAutoUpdate = false;
+      //lightContainer.add(target);
+      lightContainer.add(spotLight);
+
+
+
+
+
+			//lightHelper = new THREE.SpotLightHelper( spotLight );
+			//scene.add( lightHelper );
 
 
 			stats = new Stats();
@@ -144,6 +184,14 @@
       img.src = "heightmaps/terrain.png";
 
 
+			target = new THREE.Object3D();
+			console.log()
+			target.position.set(-7,0,-7);
+			scene.add(target);
+			spotLight.target = target;
+			lightContainer.add(target);
+			scene.add(lightContainer);
+
 		}
 
 
@@ -151,6 +199,8 @@
 
 		function Update() {
 			requestAnimationFrame( Update );
+			radiants += 3*(Math.PI/180);
+      lightContainer.matrix.makeRotationAxis(y_axis,radiants);
 			controls.update();
 			stats.update();
 			Render();
@@ -162,7 +212,14 @@
 		}
 
 
+		function addToScene(obj){
+			if(obj.geometry && obj.children.length==0 && obj.geometry.faces.length>0){
+				obj.castShadow = true;
+				obj.receiveShadow = true;
+				scene.add(obj);
+			}
 
+		}
 
     function drawTerrain(data){
       var min = data[0];
@@ -187,7 +244,8 @@
         if(y<waterHeight){
           var cube = new THREE.Mesh( geometry, sandMaterial );
 					geometry.faces.splice(6,2);
-          scene.add( cube );
+					addToScene(cube);
+          //scene.add( cube );
           geometry.dispose();
           if (x==0 || x == width-1  || z==0 || z == height-1){
             for(var j=y+1; j<waterHeight; j++){
@@ -195,7 +253,8 @@
               geometry.translate ( x, j, z );
 							onlyLateralFacesOnPerimeter(geometry, x, z);
               var cube = new THREE.Mesh( geometry, waterMaterial );
-              scene.add( cube );
+              //scene.add( cube );
+							addToScene(cube);
               geometry.dispose();
             }
 						var r = waterHeight+1-j;
@@ -203,14 +262,16 @@
 						onlyLateralFacesOnPerimeter(geometry, x, z);
 						geometry.translate ( x, (j-0.5)+r/2, z );
 	          var cube = new THREE.Mesh( geometry, waterMaterial );
-	          scene.add( cube );
+	          //scene.add( cube );
+						addToScene(cube);
 	          geometry.dispose();
 					} else if (y>1){
 						var geometry = new THREE.BoxGeometry( 1, 1, 1 );
 						geometry.faces.splice(4,4);
 	          geometry.translate ( x, y-1, z );
 	          var cube = new THREE.Mesh( geometry, sandMaterial );
-	          scene.add( cube );
+	          //scene.add( cube );
+						addToScene(cube);
 	          geometry.dispose();
 					}
 					var j = waterHeight;
@@ -222,8 +283,8 @@
 
           geometry.translate ( x, (j-0.5)+r/2, z );
           var cube = new THREE.Mesh( geometry, waterMaterial );
-          scene.add( cube );
-
+          //scene.add( cube );
+					addToScene(cube);
           geometry.dispose();
 
 					if(y<(waterHeight-1.5)){
@@ -231,38 +292,68 @@
 						if(p<0.4){
 							var algae = drawAlgae();
 							algae.matrix.setPosition(x,y+0.5,z);
+							//algae.castShadow = true;
+							//algae.receiveShadow = true;
+							algae.traverse( function( node ) {
+								if ( node instanceof THREE.Mesh ) {
+									node.castShadow = true;
+									node.receiveShadow = true;
+								}
+							});
 				      scene.add(algae);
+							//addToScene(algae);
 						}
 					}
 
         } else if (y < waterHeight+0.5){
 					geometry.faces.splice(6,2);
 					var cube = new THREE.Mesh( geometry, sandMaterial );
-          scene.add( cube );
+          //scene.add( cube );
+					addToScene(cube);
           geometry.dispose();
 
 				} else {
 
 					geometry.faces.splice(6,2);
           var cube = new THREE.Mesh( geometry, materials );
-          scene.add( cube );
+          //scene.add( cube );
+					addToScene(cube);
           geometry.dispose();
 					if(y<max-2){
 						var p = Math.random();
 						if(p<0.07){
 							var bush = drawBush();
 							bush.matrix.setPosition(x,y+0.5,z);
+							//bush.castShadow = true;
+							//bush.receiveShadow = true;
+							bush.traverse( function( node ) {
+								if ( node instanceof THREE.Mesh ) {
+									node.castShadow = true;
+									node.receiveShadow = true;
+								}
+							});
 					    scene.add(bush);
+							//addToScene(bush);
 						} else if(p<0.1){
 							var tree = drawTree();
 							tree.matrix.setPosition(x,y+0.5,z);
+							//tree.castShadow = true;
+							//tree.receiveShadow = true;
+							tree.traverse( function( node ) {
+								if ( node instanceof THREE.Mesh ) {
+									node.castShadow = true;
+									node.receiveShadow = true;
+								}
+							});
 					    scene.add(tree);
+							//addToScene(tree);
 						}
 
 					} else if(y==max){
             var lightHouse = drawLightHouse();
             lightHouse.position.set(x,y,z);
             scene.add(lightHouse);
+						lightHouse.add(lightContainer);
           }
 
 
@@ -279,7 +370,8 @@
 						geometry.faces.splice(6,2);
             geometry.translate ( x, j, z );
             var cube = new THREE.Mesh( geometry, groundMaterial );
-            scene.add( cube );
+            //scene.add( cube );
+						addToScene(cube);
             geometry.dispose();
           }
           if(j > -1){
@@ -287,7 +379,8 @@
 						onlyLateralFacesOnPerimeter(geometry, x, z);
             geometry.translate ( x, j-((r-1)/2), z );
             var cube = new THREE.Mesh( geometry, groundMaterial );
-            scene.add( cube );
+            //scene.add( cube );
+						addToScene(cube);
             geometry.dispose();
           }
         }
@@ -297,14 +390,16 @@
 				geometry.faces.splice(8,4);
 				geometry.faces.splice(0,6);
         var cube = new THREE.Mesh( geometry, groundMaterial );
-        scene.add( cube );
+        //scene.add( cube );
+				addToScene(cube);
         geometry.dispose();
         if(y>waterHeight){
           var geometry = new THREE.BoxGeometry( 1, 1, 1 );
 					geometry.faces.splice(4,4);
           geometry.translate ( x, y-1, z );
           var cube = new THREE.Mesh( geometry, groundMaterial );
-          scene.add( cube );
+          //scene.add( cube );
+					addToScene(cube);
           geometry.dispose();
         }
 
