@@ -1,0 +1,268 @@
+<html>
+	<head>
+		<title>Scene Test Vittor</title>
+		<style>
+
+		body {
+			font-family: Monospace;
+			background-color: #252850;
+			margin: 0px;
+			overflow: hidden;
+		}
+
+		canvas {
+			width: 100%;
+			height: 100%;
+		}
+
+	</style>
+		<script src="../lib/three.min.js"></script>
+		<script src="../lib/stats.min.js"></script>
+		<script src="../lib/Coordinates.js"></script>
+		<script src="../lib/OrbitControls.js"></script>
+	</head>
+	<body>
+
+		<script>
+
+		var scene, camera, renderer, controls, stats;
+    var whiteMaterial = new THREE.MeshBasicMaterial( { color: 0xeeeeee } );
+    var redMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000 } );
+    var yellowMaterial = new THREE.MeshBasicMaterial( { color: 0xffff66 } );
+    var greyMaterial = new THREE.MeshBasicMaterial( { color: 0x555555 } );
+    var lineMaterial = new THREE.LineBasicMaterial({color:0x000000, linewidth: 0.6})
+    var scale = 1;
+
+		function Start() {
+			scene = new THREE.Scene();
+			camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+			renderer = new THREE.WebGLRenderer( {antialias: true} );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			renderer.setClearColor( 0x252850 );
+			document.body.appendChild( renderer.domElement );
+
+			camera.position.set(10,10,10);
+			camera.lookAt( new THREE.Vector3(0,0,0));
+
+
+			stats = new Stats();
+			stats.domElement.style.position = 'absolute';
+			stats.domElement.style.top = '0px';
+			document.body.appendChild( stats.domElement );
+
+			// uncomment if you need to draw coordinate axes when building the scene
+			Coordinates.drawAllAxes();
+
+			controls = new THREE.OrbitControls( camera );
+			controls.addEventListener( 'change', Render );
+
+      var lightHouse = drawLightHouse();
+      lightHouse.position.set(10,10,10);
+      scene.add(lightHouse);
+}
+
+function drawLightHouse(){
+      var base = drawBase();
+      base.position.set(0,0,0);
+      scene.add(base);
+
+      var body = drawBody();
+      body.position.set(0,2,0);
+      scene.add(body);
+
+
+			var top = drawTop();
+      top.position.set(0,9,0);
+      scene.add(top);
+
+
+      var lightHouse = new THREE.Object3D();
+      lightHouse.add(base);
+      lightHouse.add(body);
+      lightHouse.add(top);
+      return lightHouse;
+		}
+
+
+
+		function Update() {
+			requestAnimationFrame( Update );
+			controls.update();
+			stats.update();
+			Render();
+		}
+
+		function Render() {
+
+			renderer.render(scene, camera);
+		}
+
+		Start();
+		Update();
+
+    function drawBase(){
+      var base = new THREE.Object3D();
+      for(var h=0; h<2; h++){
+        var baseLevel = new THREE.Object3D();
+        var l = 3;
+        var tot = l*l;
+        for(var i=0; i<tot; i++){
+          var x = i%l;
+          var y = h;
+          var z = Math.floor(i/l);
+          if(x==0 || x==l-1 || z==0 || z==l-1){
+            var geometry = new THREE.BoxGeometry(1, 1, 1);
+            removeInternalFaces(x,z,l,geometry);
+
+            if((x==0 && z==0) || (x==0 && z==l-1) || (x==l-1 && z==0) || (x==l-1 && z==l-1)
+								|| (x==0) || (x==l-1)){
+                  if(y==0){
+                    geometry.faces.splice(2,4);
+                  } else {
+                    geometry.faces.splice(4,2);
+                  }
+
+						} else if((z==0) || (z==l-1)){
+              if(y==0){
+                geometry.faces.splice(0,4);
+              } else {
+                geometry.faces.splice(2,2);
+              }
+						}
+            geometry.translate(x,y,z);
+
+	          var cube = new THREE.Mesh( geometry, whiteMaterial );
+						baseLevel.add(cube);
+	          geometry.dispose();
+          }
+
+      }
+      baseLevel.matrixAutoUpdate = false;
+      baseLevel.matrix.makeTranslation(-1,0,-1);
+      base.add(baseLevel);
+    }
+    return base;
+  }
+
+
+  function drawBody(){
+    var body = new THREE.Object3D();
+    for(var h=0; h<7; h++){
+      var bodyLevel = new THREE.Object3D();
+      var l = 3;
+      var tot = l*l;
+      for(var i=0; i<tot; i++){
+        var x = i%l;
+        var y = h;
+        var z = Math.floor(i/l);
+        if(x==0 || x==l-1 || z==0 || z==l-1){
+
+          if((x==0 && z==0) || (x==0 && z==l-1) || (x==l-1 && z==0) || (x==l-1 && z==l-1)){
+            var geometry = new THREE.BoxGeometry(Math.sqrt(2), 1, Math.sqrt(2));
+            geometry.rotateY(45*Math.PI/180);
+            if(x==0 && z==0){
+              x+=0.5;
+              z+=0.5;
+            } else if(x==0 && z==l-1){
+              x+=0.5;
+              z-=0.5;
+            } else if(x==l-1 && z==0){
+              x-=0.5;
+              z+=0.5;
+            } else if(x==l-1 && z==l-1){
+              x-=0.5;
+              z-=0.5;
+            }
+          } else {
+            var geometry = new THREE.BoxGeometry(1, 1, 1);
+          }
+
+          removeInternalFaces(x,z,l,geometry);
+
+          if((x==0 && z==0) || (x==0 && z==l-1) || (x==l-1 && z==0) || (x==l-1 && z==l-1)
+              || (x==0) || (x==l-1)){
+
+              geometry.faces.splice(4,2);
+
+          } else if((z==0) || (z==l-1)){
+              geometry.faces.splice(2,2);
+          }
+          geometry.translate(x-1,y,z-1);
+
+          if(h%2==1){
+            var cube = new THREE.Mesh( geometry, whiteMaterial );
+          } else {
+            var cube = new THREE.Mesh( geometry, redMaterial );
+          }
+          bodyLevel.add(cube);
+          geometry.dispose();
+        }
+
+      }
+      bodyLevel.matrixAutoUpdate = false;
+
+      scale -= 0.1;
+
+      bodyLevel.matrix.scale(new THREE.Vector3(scale,1,scale));
+      body.add(bodyLevel);
+    }
+    return body;
+  }
+
+
+  function drawTop(){
+    var top = new THREE.Object3D();
+    var geometry = new THREE.BoxGeometry(0.5, 1, 0.5);
+    geometry.faces.splice(6,2);
+    var cube = new THREE.Mesh( geometry, yellowMaterial );
+    top.add(cube);
+    var edges = new THREE.EdgesGeometry(geometry)
+    edges = new THREE.LineSegments(edges,lineMaterial);
+    top.add(edges);
+
+    var geometryCover = new THREE.BoxGeometry(1, 0.3, 1);
+    var cover = new THREE.Mesh( geometryCover, greyMaterial );
+    geometryCover.translate(0,0.65,0);
+    top.add(cover);
+    var geometryCover1 = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+    var cover1 = new THREE.Mesh( geometryCover1, greyMaterial );
+    geometryCover1.translate(0,0.87,0);
+    top.add(cover1);
+
+    return top;
+  }
+
+
+
+  function removeInternalFaces(x, z, l, geometry){
+    if(x==0 && z==0){
+      geometry.faces.splice(8,2);
+      geometry.faces.splice(0,2);
+    } else if(x==0 && z==l-1){
+      geometry.faces.splice(10,2);
+      geometry.faces.splice(0,2);
+    } else if(x==l-1 && z==0){
+      geometry.faces.splice(8,2);
+      geometry.faces.splice(2,2);
+    } else if(x==l-1 && z==l-1){
+      geometry.faces.splice(10,2);
+      geometry.faces.splice(2,2);
+    } else if(x==0){
+      geometry.faces.splice(8,4);
+      geometry.faces.splice(0,2);
+    } else if(x==l-1){
+      geometry.faces.splice(8,4);
+      geometry.faces.splice(2,2);
+    } else if(z==0){
+      geometry.faces.splice(8,2);
+      geometry.faces.splice(0,4);
+    } else if(z==l-1){
+      geometry.faces.splice(10,2);
+      geometry.faces.splice(0,4);
+    }
+  }
+
+		</script>
+	</body>
+</html>
