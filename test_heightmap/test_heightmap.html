@@ -92,9 +92,20 @@
 			// terrain
 			var img = new Image();
 
-			img.onload = onLoad(img);
+			//img.onload = onLoad(img);
 
-      drawTerrain(img.onload);
+			img.onload = function () {
+
+				//get height data from img
+				var data = getHeightData(img);
+
+				drawTerrain(data);
+
+			};
+			// load img source
+			img.src = "heightmaps/heightmap2.png";
+
+      //drawTerrain(img.onload);
 
 		}
 
@@ -121,9 +132,10 @@
 			renderer.render(scene, camera);
 		}
 
-    var lateral = THREE.ImageUtils.loadTexture('textures/lateral.jpg');
-    var bottom = THREE.ImageUtils.loadTexture('textures/bottom.jpg');
-    var up = THREE.ImageUtils.loadTexture('textures/up.jpg');
+
+    var lateral = new THREE.TextureLoader().load('textures/lateral.jpg');
+    var bottom = new THREE.TextureLoader().load('textures/bottom.jpg');
+    var up = new THREE.TextureLoader().load('textures/up.jpg');
     var materials = [
       new THREE.MeshBasicMaterial( { map: lateral } ),
       new THREE.MeshBasicMaterial( { map: lateral } ),
