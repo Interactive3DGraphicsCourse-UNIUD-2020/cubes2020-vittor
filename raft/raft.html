@@ -1,0 +1,247 @@
+<html>
+	<head>
+		<title>Scene Test Vittor</title>
+		<style>
+
+		body {
+			font-family: Monospace;
+			background-color: #252850;
+			margin: 0px;
+			overflow: hidden;
+		}
+
+		canvas {
+			width: 100%;
+			height: 100%;
+		}
+
+	</style>
+		<script src="../lib/three.min.js"></script>
+		<script src="../lib/stats.min.js"></script>
+		<script src="../lib/Coordinates.js"></script>
+		<script src="../lib/OrbitControls.js"></script>
+	</head>
+	<body>
+
+		<script>
+
+		var scene, camera, renderer, controls, stats;
+    var whiteMaterial = new THREE.MeshPhongMaterial( { color: 0xeeeeee } );
+    var treeTrunk = new THREE.TextureLoader().load('textures/treeTrunk.jpg');
+    var treeTrunkMaterial = new THREE.MeshPhongMaterial( { map: treeTrunk } );
+
+		function Start() {
+			scene = new THREE.Scene();
+			camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+			renderer = new THREE.WebGLRenderer( {antialias: true} );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			renderer.setClearColor( 0x252850 );
+			document.body.appendChild( renderer.domElement );
+
+			camera.position.set(10,10,10);
+			camera.lookAt( new THREE.Vector3(0,0,0));
+
+      hemiLight = new THREE.HemisphereLight( 0x252850, 0x252850, 0.6 );
+			hemiLight.color.setHSL( 0.6, 1, 0.6 );
+			hemiLight.groundColor.setHSL( 0.095, 1, 0.75 );
+			hemiLight.position.set( 0, 500, 0 );
+			scene.add( hemiLight );
+
+
+			stats = new Stats();
+			stats.domElement.style.position = 'absolute';
+			stats.domElement.style.top = '0px';
+			document.body.appendChild( stats.domElement );
+
+			// uncomment if you need to draw coordinate axes when building the scene
+			Coordinates.drawAllAxes();
+
+			controls = new THREE.OrbitControls( camera );
+			controls.addEventListener( 'change', Render );
+
+      var raft = drawRaft();
+      raft.position.set(2,2,2);
+      scene.add(raft);
+}
+
+function drawRaft(){
+      var base = drawBaseRaft();
+      scene.add(base);
+
+      var masterTree = drawMasterTree();
+      scene.add(masterTree);
+
+
+			var sail = drawSail();
+      scene.add(sail);
+
+
+      var raft = new THREE.Object3D();
+      raft.add(base);
+      raft.add(masterTree);
+      raft.add(sail);
+      return raft;
+		}
+
+
+
+		function Update() {
+			requestAnimationFrame( Update );
+			controls.update();
+			stats.update();
+			Render();
+		}
+
+		function Render() {
+
+			renderer.render(scene, camera);
+		}
+
+		Start();
+		Update();
+
+    function drawBaseRaft(){
+      var base = new THREE.Object3D();
+      var l = 3;
+      var tot = l*l;
+      for(var i=0; i<tot; i++){
+        var x = i%l;
+        var y = 0;
+        var z = Math.floor(i/l);
+        if(x==0 || x==l-1 || z==0 || z==l-1){
+          var geometry = new THREE.BoxGeometry(1, 1, 1);
+          removeInternalFaces(x,z,l,geometry);
+          geometry.translate(x-1,y,z-1);
+          var cube = new THREE.Mesh( geometry, treeTrunkMaterial );
+					base.add(cube);
+	        geometry.dispose();
+        } else {
+          var geometry = new THREE.BoxGeometry(1, 1, 1);
+          geometry.faces.splice(8,4);
+          geometry.faces.splice(0,4);
+          geometry.translate(x-1,y,z-1);
+          var cube = new THREE.Mesh( geometry, treeTrunkMaterial );
+          base.add(cube);
+          geometry.dispose();
+        }
+      }
+      base.matrixAutoUpdate = false;
+      base.matrix.makeScale(1,0.5,1);
+      return base;
+  }
+
+
+  function drawMasterTree(){
+    var masterTree = new THREE.Object3D();
+    for(var h=0; h<10; h++){
+      var geometry = new THREE.BoxGeometry(1, 1, 1);
+      if(h==9){
+        geometry.faces.splice(6,2);
+      } else {
+        geometry.faces.splice(4,4);
+      }
+      var cube = new THREE.Mesh( geometry, treeTrunkMaterial );
+      geometry.translate(0,h+1,0);
+      masterTree.add(cube);
+      geometry.dispose();
+
+      }
+
+      for(var l=0; l<6; l++){
+        var geometry = new THREE.BoxGeometry(1, 1, 1);
+        if(l==5){
+          geometry.faces.splice(2,2);
+        } else {
+          geometry.faces.splice(0,4);
+        }
+        var cube = new THREE.Mesh( geometry, treeTrunkMaterial );
+        geometry.translate(l+1,4,0);
+        masterTree.add(cube);
+        geometry.dispose();
+
+      }
+      masterTree.matrixAutoUpdate = false;
+      masterTree.matrix.scale(new THREE.Vector3(0.3,0.5,0.3));
+
+      return masterTree;
+  }
+
+
+  function drawSail(){
+    var sail = new THREE.Object3D();
+    for(var h=0; h<6; h++){
+      for(var l=0; l<6; l++){
+        var geometry = new THREE.BoxGeometry(1, 1, 1);
+        if(h+l==5){
+          geometry.faces.splice(6,2);
+          geometry.faces.splice(2,2);
+        } else if(h+l<5){
+          geometry.faces.splice(2,6);
+        } else {
+          continue
+        }
+        geometry.translate(l+1,5+h,0);
+        var cube = new THREE.Mesh( geometry, whiteMaterial );
+        sail.add(cube);
+
+      }
+    }
+    sail.matrixAutoUpdate = false;
+    sail.matrix.scale(new THREE.Vector3(0.3,0.5,0.3));
+
+
+    return sail;
+  }
+
+  function shadowObj(obj){
+		obj.traverse( function( node ) {
+			if ( node instanceof THREE.Mesh ) {
+				node.castShadow = true;
+				node.receiveShadow = true;
+			}
+		});
+	}
+
+  function addToScene(obj){
+    if(obj.geometry && obj.children.length==0 && obj.geometry.faces.length>0){
+      obj.castShadow = true;
+      obj.receiveShadow = true;
+      scene.add(obj);
+    }
+
+  }
+
+
+
+  function removeInternalFaces(x, z, l, geometry){
+    if(x==0 && z==0){
+      geometry.faces.splice(8,2);
+      geometry.faces.splice(0,2);
+    } else if(x==0 && z==l-1){
+      geometry.faces.splice(10,2);
+      geometry.faces.splice(0,2);
+    } else if(x==l-1 && z==0){
+      geometry.faces.splice(8,2);
+      geometry.faces.splice(2,2);
+    } else if(x==l-1 && z==l-1){
+      geometry.faces.splice(10,2);
+      geometry.faces.splice(2,2);
+    } else if(x==0){
+      geometry.faces.splice(8,4);
+      geometry.faces.splice(0,2);
+    } else if(x==l-1){
+      geometry.faces.splice(8,4);
+      geometry.faces.splice(2,2);
+    } else if(z==0){
+      geometry.faces.splice(8,2);
+      geometry.faces.splice(0,4);
+    } else if(z==l-1){
+      geometry.faces.splice(10,2);
+      geometry.faces.splice(0,4);
+    }
+  }
+
+		</script>
+	</body>
+</html>
