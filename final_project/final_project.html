@@ -30,7 +30,8 @@
 		var radiants = 0;
 		var move = 1;
 		var f = true;
-		var current_time;
+		var current_time_movement;
+		var current_time_render;
     var width, height;
 
     var waterHeight = 3.5;
@@ -130,13 +131,14 @@
 			hemiLight.position.set( 0, 500, 0 );
 			scene.add( hemiLight );
 
-			camera.position.set(30,14,60);
-			camera.lookAt( new THREE.Vector3(0,0,0));
+			camera.position.set(0,20,30);
+
+
 
 
 
 			spotLight = new THREE.SpotLight( 0xffffff, 1 );
-			spotLight.position.set( 0, 11.5, 0 );
+			spotLight.position.set( 0, 9.5, 0 );
 			spotLight.angle = Math.PI / 7;
 			spotLight.penumbra = 0.2;
 
@@ -148,16 +150,16 @@
 			scene.add( spotLight );
 
 
-
 			stats = new Stats();
 			stats.domElement.style.position = 'absolute';
 			stats.domElement.style.top = '0px';
 			document.body.appendChild( stats.domElement );
 
-			// uncomment if you need to draw coordinate axes when building the scene
-			//Coordinates.drawAllAxes();
+			//lightHelper = new THREE.SpotLightHelper( spotLight );
+			//scene.add( lightHelper );
 
 			controls = new THREE.OrbitControls( camera );
+			controls.target = new THREE.Vector3(30,10,30);
 			//controls.addEventListener( 'change', Render );
 
 			// terrain
@@ -187,7 +189,11 @@
 			lightContainer.add(target);
 			scene.add(lightContainer);
 
-			current_time = Date.now();
+			current_time_movement = Date.now();
+
+			current_time_render = Date.now();
+
+
 
 		}
 
@@ -195,12 +201,13 @@
 
 
 		function Update() {
-			requestAnimationFrame( Update );
+			 update_time_render = Date.now();
+
 			radiants += 3*(Math.PI/180);
       lightContainer.matrix.makeRotationAxis(y_axis,radiants);
 			//raftContainer.matrix.makeRotationAxis(y_axis,radiants);
-			var update_time = Date.now();
-			if(update_time-current_time>500){
+			var update_time_movement = Date.now();
+			if(update_time_movement-current_time_movement>500){
 				if(raft && move<=3 && f){
 					raft.matrix.makeTranslation(20,4,47+move);
 					move += 1;
@@ -212,16 +219,16 @@
 							f = true;
 					}
 				}
-				current_time = update_time;
+				current_time_movement = update_time_movement;
 			}
-
 			controls.update();
 			stats.update();
 			Render();
+			requestAnimationFrame( Update )
+
 		}
 
-		function Render() {
-
+		function Render(){
 			renderer.render(scene, camera);
 		}
 
@@ -420,7 +427,7 @@
 
 					if(y<(waterHeight-1.5)){
 						var p = Math.random();
-						if(p<0.4){
+						if(p<0.3){
 							var algae = drawAlgae();
 							algae.matrix.setPosition(x,y+0.5,z);
 							shadowObj(algae);
@@ -447,7 +454,7 @@
 							bush.matrix.setPosition(x,y+0.5,z);
 							shadowObj(bush);
 					    scene.add(bush);
-						} else if(p<0.1){
+						} else if(p<0.09){
 							var tree = drawTree();
 							tree.matrix.setPosition(x,y+0.5,z);
 							shadowObj(tree);
@@ -457,6 +464,7 @@
 					} else if(y==max){
             var lightHouse = drawLightHouse();
             lightHouse.position.set(x,y,z);
+						//camera.lookAt( new THREE.Vector3(x,y,z));
             scene.add(lightHouse);
 						lightHouse.add(lightContainer);
           }
@@ -498,6 +506,7 @@
         //scene.add( cube );
 				addToScene(cube);
         geometry.dispose();
+
         if(y>waterHeight){
           var geometry = new THREE.BoxGeometry( 1, 1, 1 );
 					geometry.faces.splice(4,4);
@@ -762,7 +771,7 @@
 
 
   			var top = drawTop();
-        top.position.set(0,11,0);
+        top.position.set(0,9,0);
         scene.add(top);
 
 
@@ -818,92 +827,100 @@
     }
 
 
-  function drawBody(){
-    var body = new THREE.Object3D();
-    for(var h=0; h<9; h++){
-      var bodyLevel = new THREE.Object3D();
-      var l = 3;
-      var tot = l*l;
-      for(var i=0; i<tot; i++){
-        var x = i%l;
-        var y = h;
-        var z = Math.floor(i/l);
-        if(x==0 || x==l-1 || z==0 || z==l-1){
+		function drawBody(){
+			var body = new THREE.Object3D();
+			for(var h=0; h<7; h++){
+				var bodyLevel = new THREE.Object3D();
+				var l = 3;
+				var tot = l*l;
+				for(var i=0; i<tot; i++){
+					var x = i%l;
+					var y = h;
+					var z = Math.floor(i/l);
+					if(x==0 || x==l-1 || z==0 || z==l-1){
 
-          if((x==0 && z==0) || (x==0 && z==l-1) || (x==l-1 && z==0) || (x==l-1 && z==l-1)){
-            var geometry = new THREE.BoxGeometry(Math.sqrt(2), 1, Math.sqrt(2));
-            geometry.rotateY(45*Math.PI/180);
-            if(x==0 && z==0){
-              x+=0.5;
-              z+=0.5;
-            } else if(x==0 && z==l-1){
-              x+=0.5;
-              z-=0.5;
-            } else if(x==l-1 && z==0){
-              x-=0.5;
-              z+=0.5;
-            } else if(x==l-1 && z==l-1){
-              x-=0.5;
-              z-=0.5;
-            }
-          } else {
-            var geometry = new THREE.BoxGeometry(1, 1, 1);
-          }
+						if((x==0 && z==0) || (x==0 && z==l-1) || (x==l-1 && z==0) || (x==l-1 && z==l-1)){
+							var geometry = new THREE.BoxGeometry(Math.sqrt(2), 1, Math.sqrt(2));
+							removeInternalFaces(x,z,l,geometry);
+							geometry.rotateY(45*Math.PI/180);
+							if(x==0 && z==0){
+								geometry.faces.splice(4,2);
+								geometry.faces.splice(0,2);
+								x+=0.5;
+								z+=0.5;
+							} else if(x==0 && z==l-1){
+								geometry.faces.splice(4,4);
+								x+=0.5;
+								z-=0.5;
+							} else if(x==l-1 && z==0){
+								geometry.faces.splice(4,4);
+								x-=0.5;
+								z+=0.5;
+							} else if(x==l-1 && z==l-1){
+								geometry.faces.splice(4,2);
+								geometry.faces.splice(0,2);
+								x-=0.5;
+								z-=0.5;
+							}
 
-          removeInternalFaces(x,z,l,geometry);
+						} else {
+							var geometry = new THREE.BoxGeometry(1, 1, 1);
+							removeInternalFaces(x,z,l,geometry);
+						}
 
-          if((x==0 && z==0) || (x==0 && z==l-1) || (x==l-1 && z==0) || (x==l-1 && z==l-1)
-              || (x==0) || (x==l-1)){
+						if((x==0 && z==0) || (x==0 && z==l-1) || (x==l-1 && z==0) || (x==l-1 && z==l-1)
+								|| (x==0) || (x==l-1)){
 
-              geometry.faces.splice(4,2);
+								geometry.faces.splice(4,2);
 
-          } else if((z==0) || (z==l-1)){
-              geometry.faces.splice(2,2);
-          }
-          geometry.translate(x-1,y,z-1);
+						} else if((z==0) || (z==l-1)){
+								geometry.faces.splice(2,2);
+						}
+						geometry.translate(x-1,y,z-1);
 
-          if(h%2==1){
-            var cube = new THREE.Mesh( geometry, whiteMaterial );
-          } else {
-            var cube = new THREE.Mesh( geometry, redMaterial );
-          }
-          bodyLevel.add(cube);
-          geometry.dispose();
-        }
+						if(h%2==1){
+							var cube = new THREE.Mesh( geometry, whiteMaterial );
+						} else {
+							var cube = new THREE.Mesh( geometry, redMaterial );
+						}
+						bodyLevel.add(cube);
+						geometry.dispose();
+					}
 
-      }
-      bodyLevel.matrixAutoUpdate = false;
+				}
+				bodyLevel.matrixAutoUpdate = false;
 
-      scale -= 0.08;
+				scale -= 0.1;
 
-      bodyLevel.matrix.scale(new THREE.Vector3(scale,1,scale));
-      body.add(bodyLevel);
-    }
-    return body;
-  }
+				bodyLevel.matrix.scale(new THREE.Vector3(scale,1,scale));
+				body.add(bodyLevel);
+			}
+			return body;
+		}
 
 
-  function drawTop(){
-    var top = new THREE.Object3D();
-    var geometry = new THREE.BoxGeometry(0.5, 1, 0.5);
-    geometry.faces.splice(6,2);
-    var cube = new THREE.Mesh( geometry, yellowMaterial );
-    top.add(cube);
-    var edges = new THREE.EdgesGeometry(geometry)
-    edges = new THREE.LineSegments(edges,lineMaterial);
-    top.add(edges);
+		function drawTop(){
+			var top = new THREE.Object3D();
+			var geometry = new THREE.BoxGeometry(0.5, 1, 0.5);
+			geometry.faces.splice(6,2);
+			var cube = new THREE.Mesh( geometry, yellowMaterial );
+			top.add(cube);
+			var edges = new THREE.EdgesGeometry(geometry)
+			edges = new THREE.LineSegments(edges,lineMaterial);
+			top.add(edges);
 
-    var geometryCover = new THREE.BoxGeometry(1, 0.3, 1);
-    var cover = new THREE.Mesh( geometryCover, greyMaterial );
-    geometryCover.translate(0,0.65,0);
-    top.add(cover);
-    var geometryCover1 = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-    var cover1 = new THREE.Mesh( geometryCover1, greyMaterial );
-    geometryCover1.translate(0,0.87,0);
-    top.add(cover1);
+			var geometryCover = new THREE.BoxGeometry(1, 0.3, 1);
+			var cover = new THREE.Mesh( geometryCover, greyMaterial );
+			geometryCover.translate(0,0.65,0);
+			top.add(cover);
+			var geometryCover1 = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+			var cover1 = new THREE.Mesh( geometryCover1, greyMaterial );
+			geometryCover1.faces.splice(6,2);
+			geometryCover1.translate(0,0.87,0);
+			top.add(cover1);
 
-    return top;
-  }
+			return top;
+		}
 
 
 		function removeInternalFaces(x, z, l, geometry){

@@ -58,14 +58,14 @@
 			controls.addEventListener( 'change', Render );
 
       var lightHouse = drawLightHouse();
-      lightHouse.position.set(10,10,10);
+      lightHouse.position.set(0,0,0);
       scene.add(lightHouse);
 }
 
 function drawLightHouse(){
       var base = drawBase();
       base.position.set(0,0,0);
-      scene.add(base);
+      //scene.add(base);
 
       var body = drawBody();
       body.position.set(0,2,0);
@@ -160,25 +160,32 @@ function drawLightHouse(){
 
           if((x==0 && z==0) || (x==0 && z==l-1) || (x==l-1 && z==0) || (x==l-1 && z==l-1)){
             var geometry = new THREE.BoxGeometry(Math.sqrt(2), 1, Math.sqrt(2));
+						removeInternalFaces(x,z,l,geometry);
             geometry.rotateY(45*Math.PI/180);
             if(x==0 && z==0){
+							geometry.faces.splice(4,2);
+							geometry.faces.splice(0,2);
               x+=0.5;
               z+=0.5;
             } else if(x==0 && z==l-1){
+							geometry.faces.splice(4,4);
               x+=0.5;
               z-=0.5;
             } else if(x==l-1 && z==0){
+							geometry.faces.splice(4,4);
               x-=0.5;
               z+=0.5;
             } else if(x==l-1 && z==l-1){
+							geometry.faces.splice(4,2);
+							geometry.faces.splice(0,2);
               x-=0.5;
               z-=0.5;
             }
+
           } else {
             var geometry = new THREE.BoxGeometry(1, 1, 1);
+						removeInternalFaces(x,z,l,geometry);
           }
-
-          removeInternalFaces(x,z,l,geometry);
 
           if((x==0 && z==0) || (x==0 && z==l-1) || (x==l-1 && z==0) || (x==l-1 && z==l-1)
               || (x==0) || (x==l-1)){
@@ -227,6 +234,7 @@ function drawLightHouse(){
     top.add(cover);
     var geometryCover1 = new THREE.BoxGeometry(0.4, 0.4, 0.4);
     var cover1 = new THREE.Mesh( geometryCover1, greyMaterial );
+		geometryCover1.faces.splice(6,2);
     geometryCover1.translate(0,0.87,0);
     top.add(cover1);
 
