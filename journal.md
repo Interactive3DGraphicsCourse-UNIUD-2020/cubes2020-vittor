@@ -80,4 +80,4 @@ In particolare sono stati risolti:
 - gli avvisi relativi alla modifica forzata delle dimensioni delle texture modificando le immagini di partenza tramite un software di manipolazione delle immagini;
 - gli errori provenienti dalla riga "controls.addEventListener( 'change', Render );", rimuovendola, dato che in questa scena non sono necessari input provenienti dall'utente e lasciando solo la libertà di cambiare la posizione della camera.
 
-Non sono stati risolti, invece, gli avvisi forniti da Google Chrome riguardanti il fatto che l'handler della funzione "requestAnimationFrame" ci impieghi troppo tempo.
+Non sono stati risolti, invece, gli avvisi forniti da Google Chrome riguardanti il fatto che l'handler della funzione "requestAnimationFrame" impieghi troppo tempo.
