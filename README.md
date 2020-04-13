@@ -4,8 +4,11 @@
 
 ## Descrizione
 Come si può notare dall'immagine la scena rappresenta un'ambientazione marina, con un faro in funzione di notte. Le animazioni implementate sono il movimento della luce del faro e quello della zattera, che si avvicina e si allontana dalla riva, simulando l'idea dello spostamento dovuto alla corrente.
+
 Tutto il codice necessario è presente nel file [final_project.html](final_project.html).
+
 I file ultizzati per le texture dei cubi sono salvati nella cartella [textures](textures).
+
 L'HeightMap di partenza si trova nella cartella [heightmaps](heightmaps) ed è la segunte
 
 ![terrain](heightmaps/terrain.png)
