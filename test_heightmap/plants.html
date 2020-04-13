@@ -1,0 +1,317 @@
+<html>
+	<head>
+		<title>Plants Test Vittor</title>
+		<style>
+
+		body {
+			font-family: Monospace;
+			background-color: #f0f0f0;
+			margin: 0px;
+			overflow: hidden;
+		}
+
+		canvas {
+			width: 100%;
+			height: 100%;
+		}
+
+	</style>
+		<script src="../lib/three.min.js"></script>
+		<script src="../lib/stats.min.js"></script>
+		<script src="../lib/Coordinates.js"></script>
+		<script src="../lib/OrbitControls.js"></script>
+	</head>
+	<body>
+
+		<script>
+
+		var scene, camera, renderer, controls, stats;
+
+    var treeTrunk = new THREE.TextureLoader().load('textures/treeTrunk.jpg');
+    var treeLeaves = new THREE.TextureLoader().load('textures/treeLeaves.png');
+    var bush = new THREE.TextureLoader().load('textures/bush.png');
+		var algae = new THREE.TextureLoader().load('textures/algae.jpg');
+
+    var treeTrunkMaterial = new THREE.MeshBasicMaterial( { map: treeTrunk } );
+    var treeLeavesMaterial = new THREE.MeshBasicMaterial( { map: treeLeaves } );
+    var bushMaterial = new THREE.MeshBasicMaterial( { map: bush } );
+		var algaeMaterial = new THREE.MeshBasicMaterial( { map: algae } );
+
+		function Start() {
+			scene = new THREE.Scene();
+			camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+			renderer = new THREE.WebGLRenderer( {antialias: true} );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			renderer.setClearColor( 0xf0f0f0 );
+			document.body.appendChild( renderer.domElement );
+
+			camera.position.set(10,10,10);
+			camera.lookAt( new THREE.Vector3(0,0,0));
+
+
+			stats = new Stats();
+			stats.domElement.style.position = 'absolute';
+			stats.domElement.style.top = '0px';
+			document.body.appendChild( stats.domElement );
+
+			// uncomment if you need to draw coordinate axes when building the scene
+			Coordinates.drawAllAxes();
+
+			controls = new THREE.OrbitControls( camera );
+			controls.addEventListener( 'change', Render );
+
+
+      var tree = drawTree();
+			tree.matrix.setPosition(0,0,0);
+      scene.add(tree);
+
+      var bush = drawBush();
+			bush.matrix.setPosition(5,0,0);
+      scene.add(bush);
+
+			var algae = drawAlgae();
+			algae.matrix.setPosition(0,0,5);
+      scene.add(algae);
+		}
+
+
+
+		function Update() {
+			requestAnimationFrame( Update );
+			controls.update();
+			stats.update();
+			Render();
+		}
+
+		function Render() {
+
+			renderer.render(scene, camera);
+		}
+
+		Start();
+		Update();
+
+
+    function drawTree(){
+      var tree = new THREE.Object3D();
+
+      var height_trunk = 8;
+      // draw the Trunk
+      for(var k=0; k<height_trunk; k += 1){
+        var geometry = new THREE.BoxGeometry(1, 1, 1);
+        geometry.faces.splice(4,4);
+        geometry.translate(0,k,0);
+  			var cube = new THREE.Mesh( geometry, treeTrunkMaterial );
+        tree.add(cube);
+        geometry.dispose();
+      }
+      var geometry = new THREE.BoxGeometry(1, 1, 1);
+      geometry.faces.splice(6,2);
+      geometry.translate(0,k,0);
+      var cube = new THREE.Mesh( geometry, treeTrunkMaterial );
+      tree.add(cube);
+      geometry.dispose();
+
+      // draw the Leaves
+      k+=1;
+      var geometry = new THREE.BoxGeometry(1, 1, 1);
+			geometry.faces.splice(6,2);
+      geometry.translate(0,k,0);
+      var cube = new THREE.Mesh( geometry, treeLeavesMaterial );
+      tree.add(cube);
+      geometry.dispose();
+      k-=1;
+
+      var n_levels = 3;
+      for(var h=1; h<=n_levels; h++){
+        var leavesLevel = new THREE.Object3D();
+        var l = h*2+1;
+        var tot = l*l;
+        for(var i=0; i<tot; i++){
+					var x = i%l;
+					var y = k;
+					var z = Math.floor(i/l);
+					if(x==0 || x==l-1 || z==0 || z==l-1){
+
+	          var geometry = new THREE.BoxGeometry(1, 1, 1);
+						removeInternalFaces(x, z, l, geometry);
+						if(h<n_levels &&
+							(
+								(x==0 && z==0) || (x==0 && z==l-1) || (x==l-1 && z==0) || (x==l-1 && z==l-1)
+								|| (x==0) || (x==l-1))){
+							geometry.faces.splice(4,2);
+						} else if(h<n_levels && ((z==0) || (z==l-1))){
+							geometry.faces.splice(2,2);
+						}
+						geometry.translate(x,k,z);
+	          var cube = new THREE.Mesh( geometry, treeLeavesMaterial );
+	          leavesLevel.add(cube);
+	          geometry.dispose();
+					} else if(h==n_levels && (i!=(tot-1)/2)){
+						var geometry = new THREE.BoxGeometry(1, 1, 1);
+						geometry.faces.splice(8,4);
+						geometry.faces.splice(0,6);
+						geometry.translate(x,k,z);
+	          var cube = new THREE.Mesh( geometry, treeLeavesMaterial );
+	          leavesLevel.add(cube);
+						geometry.dispose();
+					}
+
+        }
+        leavesLevel.matrixAutoUpdate = false;
+        leavesLevel.matrix.makeTranslation(-h,0,-h);
+        k-=1;
+        tree.add(leavesLevel);
+      }
+      tree.matrixAutoUpdate = false;
+
+      var randomRotation = Math.random();
+      tree.matrix.makeRotationY(randomRotation);
+
+			var randomHeight = Math.random();
+			tree.matrix.scale(new THREE.Vector3(0.5,0.5+randomHeight,0.5));
+      return tree;
+
+    }
+
+    function drawBush(){
+      var bush = new THREE.Object3D();
+      var n_levels = 2;
+      var k = n_levels;
+      for(var h=1; h<=n_levels; h++){
+        var leavesLevel = new THREE.Object3D();
+				if(k==n_levels){
+					var leavesLevel1 = new THREE.Object3D();
+				}
+        var l = h*2;
+        var tot = l*l;
+        for(var i=0; i<tot; i++){
+          var x = i%l;
+          var y = k;
+          var z = Math.floor(i/l);
+					if(x==0 || x==l-1 || z==0 || z==l-1){
+	          var geometry = new THREE.BoxGeometry(1, 1, 1);
+						removeInternalFaces(x,z,l,geometry);
+						if(k==n_levels){
+							geometry.faces.splice(4,2);
+							var geometry1 = new THREE.BoxGeometry(1, 1, 1);
+							removeInternalFaces(x,z,l,geometry1);
+							geometry1.faces.splice(2,4);
+							geometry1.translate(x,y-k,z);
+							var cube1 = new THREE.Mesh( geometry1, bushMaterial );
+							leavesLevel1.add(cube1);
+							geometry1.dispose();
+						}
+						geometry.translate(x,y,z);
+
+	          var cube = new THREE.Mesh( geometry, bushMaterial );
+						leavesLevel.add(cube);
+	          geometry.dispose();
+
+
+					}
+
+        }
+				leavesLevel.matrixAutoUpdate = false;
+        leavesLevel.matrix.makeTranslation(-h,0,-h);
+
+
+        bush.add(leavesLevel);
+
+				if(k==n_levels){
+					leavesLevel1.matrixAutoUpdate = false;
+					leavesLevel1.matrix.makeTranslation(-h,0,-h);
+					bush.add(leavesLevel1);
+				}
+				k-=1;
+      }
+
+      bush.matrixAutoUpdate = false;
+      var randomRotation = Math.random();
+      bush.matrix.makeRotationY(randomRotation);
+
+			var randomScale = Math.random();
+			bush.matrix.scale(new THREE.Vector3(randomScale/2,randomScale/2,randomScale/2));
+
+      return bush;
+    }
+
+
+		function drawAlgae(){
+      var algae = new THREE.Object3D();
+      var n = Math.round(3+Math.random());
+			var max = 5;
+			var min = 2;
+      for(var i=0; i<n; i++){
+				var h = Math.random() * (max - min) + min;
+        var singleAlgae = new THREE.Object3D();
+        for(var j=0; j<h; j++){
+					if(i<2){
+						var z = 0;
+					} else {
+						var z = 1;
+					}
+          var x = i%2;
+          var y = j;
+          var geometry = new THREE.BoxGeometry(1, 1, 1);
+					if(j>=h-1){
+
+						geometry.faces.splice(6,2);
+					} else {
+						geometry.faces.splice(4,4);
+					}
+          geometry.translate(x*2,y,z*2);
+          var cube = new THREE.Mesh( geometry, algaeMaterial );
+					singleAlgae.add(cube);
+
+          geometry.dispose();
+
+					}
+					singleAlgae.matrixAutoUpdate = false;
+	        singleAlgae.matrix.makeTranslation(-1,0,-1);
+
+					algae.add(singleAlgae);
+        }
+
+      algae.matrixAutoUpdate = false;
+
+      var randomRotation = Math.random();
+      algae.matrix.makeRotationY(randomRotation);
+			var randomScale = Math.random();
+			algae.matrix.scale(new THREE.Vector3(randomScale/4,randomScale/4,randomScale/4));
+
+      return algae;
+    }
+
+		function removeInternalFaces(x, z, l, geometry){
+			if(x==0 && z==0){
+				geometry.faces.splice(8,2);
+				geometry.faces.splice(0,2);
+			} else if(x==0 && z==l-1){
+				geometry.faces.splice(10,2);
+				geometry.faces.splice(0,2);
+			} else if(x==l-1 && z==0){
+				geometry.faces.splice(8,2);
+				geometry.faces.splice(2,2);
+			} else if(x==l-1 && z==l-1){
+				geometry.faces.splice(10,2);
+				geometry.faces.splice(2,2);
+			} else if(x==0){
+				geometry.faces.splice(8,4);
+				geometry.faces.splice(0,2);
+			} else if(x==l-1){
+				geometry.faces.splice(8,4);
+				geometry.faces.splice(2,2);
+			} else if(z==0){
+				geometry.faces.splice(8,2);
+				geometry.faces.splice(0,4);
+			} else if(z==l-1){
+				geometry.faces.splice(10,2);
+				geometry.faces.splice(0,4);
+			}
+		}
+
+		</script>
+	</body>
+</html>
